@@ -61,7 +61,15 @@
         "Cats can't taste sweetness!",
         "An ostrich's eye is bigger than its brain!",
         "Space is completely silent!",
-        "Bananas are actually berries!"
+        "Bananas are actually berries!",
+        “Every mistake is a step toward your next success!”,
+        “Curiosity is the key that unlocks new adventures.”,
+        “Believe in yourself, and you can achieve anything!”,
+        “Your effort today builds the success of tomorrow.”,
+        “Every challenge is a chance to grow stronger!”,
+        “Dream big, and take small steps every day!”,
+        “Learning is a treasure that no one can steal.”,
+        “Your potential is as limitless as your imagination!”
     ];
 
     // UPDATED: Random encouraging phrases
@@ -155,7 +163,7 @@
                 level++;
                 levelEl.innerText = level;
                 createFirework();
-                quoteEl.innerText = `LEVEL ${level} reached!! Well done! Dad is proud!`;
+                quoteEl.innerText = `LEVEL ${level} reached!! Well done! Daddy is proud!`;
                 quoteEl.classList.add('level-up');
             } else {
                 quoteEl.innerText = quotes[Math.floor(Math.random() * quotes.length)] + "\nProud of you buddy!";
