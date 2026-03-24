@@ -42,4 +42,137 @@
     const quoteEl = document.getElementById('quote');
     const questionEl = document.getElementById('question');
     const answerInput = document.getElementById('answer');
-    const score
+    const scoreEl = document.getElementById('score');
+    const levelEl = document.getElementById('level');
+
+    let currentAnswer = 0;
+    let score = 0;
+    let level = 1;
+    let manY = 120;
+    let manState = 'idle';
+    let particles = [];
+    const synth = window.speechSynthesis;
+
+    const quotes = [
+        "Did you know? Honey never spoils!",
+        "The sun is actually a giant star!",
+        "Octopuses have three hearts!",
+        "A bolt of lightning is 5 times hotter than the sun!",
+        "Cats can't taste sweetness!",
+        "An ostrich's eye is bigger than its brain!",
+        "Space is completely silent!",
+        "Bananas are actually berries!"
+    ];
+
+    // UPDATED: Random encouraging phrases
+    function speakEncouragement() {
+        const phrases = ["Well done!", "Good job!", "You're on fire!"];
+        const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+        const msg = new SpeechSynthesisUtterance(randomPhrase);
+        msg.pitch = 1.7; 
+        msg.rate = 1.1;  
+        synth.speak(msg);
+    }
+
+    function generateProblem() {
+        const n1 = Math.floor(Math.random() * 9) + 1;
+        const n2 = Math.floor(Math.random() * 9) + 1;
+        const ops = ['+', '-', 'x'];
+        const op = ops[Math.floor(Math.random() * ops.length)];
+
+        if (op === '+') { currentAnswer = n1 + n2; questionEl.innerText = `${n1} + ${n2}`; }
+        else if (op === '-') { 
+            const high = Math.max(n1, n2); const low = Math.min(n1, n2);
+            currentAnswer = high - low; questionEl.innerText = `${high} - ${low}`;
+        } else { currentAnswer = n1 * n2; questionEl.innerText = `${n1} × ${n2}`; }
+        
+        answerInput.value = '';
+        answerInput.focus();
+    }
+
+    function createFirework() {
+        for(let i=0; i<40; i++) {
+            particles.push({
+                x: canvas.width/2, y: 50,
+                vx: (Math.random()-0.5)*12, vy: (Math.random()-0.5)*12,
+                color: `hsl(${Math.random()*360}, 100%, 50%)`,
+                life: 1.0
+            });
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach((p, i) => {
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.life;
+            ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
+            p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+            if(p.life <= 0) particles.splice(i, 1);
+        });
+        ctx.globalAlpha = 1.0;
+
+        const centerX = canvas.width / 2;
+        ctx.strokeStyle = "#333"; ctx.lineWidth = 4;
+
+        if (manState === 'fall') {
+            ctx.beginPath(); ctx.arc(centerX + 15, manY + 10, 10, 0, Math.PI * 2); ctx.stroke();
+            ctx.moveTo(centerX + 10, manY + 20); ctx.lineTo(centerX - 10, manY + 40); ctx.stroke();
+        } else {
+            ctx.beginPath(); ctx.arc(centerX, manY - 20, 10, 0, Math.PI * 2); ctx.stroke();
+            ctx.moveTo(centerX, manY - 10); ctx.lineTo(centerX, manY + 20); ctx.stroke();
+            ctx.moveTo(centerX - 15, manY); ctx.lineTo(centerX + 15, manY + (manState === 'jump' ? -20 : 0)); ctx.stroke();
+            ctx.moveTo(centerX, manY + 20); ctx.lineTo(centerX - 10, manY + 40); 
+            ctx.moveTo(centerX, manY + 20); ctx.lineTo(centerX + 10, manY + 40); ctx.stroke();
+        }
+        requestAnimationFrame(draw);
+    }
+
+    function animate(type) {
+        manState = type;
+        let frame = 0;
+        const interval = setInterval(() => {
+            if (type === 'jump') manY = 120 - Math.abs(Math.sin(frame * 0.2) * 50);
+            frame++;
+            if (frame > 40) { 
+                clearInterval(interval); manState = 'idle'; manY = 120; 
+                if (type === 'jump') generateProblem();
+            }
+        }, 25);
+    }
+
+    function checkAnswer() {
+        const userAns = parseInt(answerInput.value);
+        if (userAns === currentAnswer) {
+            score++;
+            scoreEl.innerText = score;
+            quoteEl.classList.remove('level-up');
+            
+            speakEncouragement(); // Calls the random phrase function
+
+            if (score % 10 === 0) {
+                level++;
+                levelEl.innerText = level;
+                createFirework();
+                quoteEl.innerText = `LEVEL ${level} reached!! Well done! Dad is proud!`;
+                quoteEl.classList.add('level-up');
+            } else {
+                quoteEl.innerText = quotes[Math.floor(Math.random() * quotes.length)] + "\nProud of you buddy!";
+                quoteEl.style.color = "#2e7d32";
+            }
+            animate('jump');
+        } else {
+            quoteEl.innerText = "Oops! Try again, you can do it!";
+            quoteEl.style.color = "#c62828";
+            animate('fall');
+        }
+    }
+
+    canvas.width = 300; canvas.height = 180;
+    generateProblem();
+    draw();
+</script>
+
+</body>
+</html>
