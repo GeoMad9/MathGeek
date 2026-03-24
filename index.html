@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Math Hero Adventure</title>
+    <style>
+        body { 
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif; 
+            text-align: center; background: #f0f4f8; margin: 0; padding: 10px;
+        }
+        #game-container { background: white; border-radius: 25px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); max-width: 400px; margin: auto; }
+        .stats { display: flex; justify-content: space-around; font-size: 18px; font-weight: bold; color: #00796b; margin-bottom: 10px; }
+        #canvas { background: #ffffff; border-radius: 15px; border: 2px solid #e0e0e0; width: 100%; height: 180px; }
+        .problem { font-size: 54px; margin: 15px 0; color: #333; font-weight: bold; }
+        input { font-size: 32px; width: 120px; text-align: center; border: 4px solid #4fc3f7; border-radius: 15px; padding: 10px; outline: none; background: #e1f5fe; }
+        .quote-box { margin-top: 15px; min-height: 70px; padding: 10px; font-size: 18px; line-height: 1.4; border-radius: 10px; }
+        .btn-check { background: #4caf50; color: white; border: none; padding: 15px 40px; font-size: 22px; border-radius: 50px; margin-top: 15px; box-shadow: 0 4px #2e7d32; cursor: pointer; }
+        .btn-check:active { box-shadow: 0 0; transform: translateY(4px); }
+        .level-up { background: #fff9c4; border: 2px solid #fbc02d; color: #f57f17; font-weight: bold; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.05);} 100% {transform: scale(1);} }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="stats">
+        <span>Score: <span id="score">0</span></span>
+        <span>Level: <span id="level">1</span></span>
+    </div>
+    <canvas id="canvas"></canvas>
+    <div class="problem" id="question">? + ?</div>
+    <input type="number" id="answer" pattern="\d*" placeholder="?">
+    <br>
+    <button class="btn-check" onclick="checkAnswer()">CHECK!</button>
+    <div class="quote-box" id="quote">Ready, Buddy? Let's go!</div>
+</div>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const quoteEl = document.getElementById('quote');
+    const questionEl = document.getElementById('question');
+    const answerInput = document.getElementById('answer');
+    const scoreEl = document.getElementById('score');
+    const levelEl = document.getElementById('level');
+
+    let currentAnswer = 0;
+    let score = 0;
+    let level = 1;
+    let manY = 120;
+    let manState = 'idle';
+    let particles = [];
+    const synth = window.speechSynthesis;
+
+    const quotes = [
+        "Did you know? Honey never spoils!",
+        "The sun is actually a giant star!",
+        "Octopuses have three hearts!",
+        "A bolt of lightning is 5 times hotter than the sun!",
+        "Cats can't taste sweetness!",
+        "An ostrich's eye is bigger than its brain!",
+        "Space is completely silent!",
+        "Bananas are actually berries!"
+    ];
+
+    function speakTada() {
+        const msg = new SpeechSynthesisUtterance("Ta-da!");
+        msg.pitch = 1.8; // High pitched and excited
+        msg.rate = 1.2;  // Quick
+        synth.speak(msg);
+    }
+
+    function generateProblem() {
+        const n1 = Math.floor(Math.random() * 9) + 1;
+        const n2 = Math.floor(Math.random() * 9) + 1;
+        const ops = ['+', '-', 'x'];
+        const op = ops[Math.floor(Math.random() * ops.length)];
+
+        if (op === '+') { currentAnswer = n1 + n2; questionEl.innerText = `${n1} + ${n2}`; }
+        else if (op === '-') { 
+            const high = Math.max(n1, n2); const low = Math.min(n1, n2);
+            currentAnswer = high - low; questionEl.innerText = `${high} - ${low}`;
+        } else { currentAnswer = n1 * n2; questionEl.innerText = `${n1} × ${n2}`; }
+        
+        answerInput.value = '';
+        answerInput.focus();
+    }
+
+    function createFirework() {
+        for(let i=0; i<40; i++) {
+            particles.push({
+                x: canvas.width/2, y: 50,
+                vx: (Math.random()-0.5)*12, vy: (Math.random()-0.5)*12,
+                color: `hsl(${Math.random()*360}, 100%, 50%)`,
+                life: 1.0
+            });
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach((p, i) => {
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.life;
+            ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
+            p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+            if(p.life <= 0) particles.splice(i, 1);
+        });
+        ctx.globalAlpha = 1.0;
+
+        const centerX = canvas.width / 2;
+        ctx.strokeStyle = "#333"; ctx.lineWidth = 4;
+
+        if (manState === 'fall') {
+            ctx.beginPath(); ctx.arc(centerX + 15, manY + 10, 10, 0, Math.PI * 2); ctx.stroke();
+            ctx.moveTo(centerX + 10, manY + 20); ctx.lineTo(centerX - 10, manY + 40); ctx.stroke();
+        } else {
+            ctx.beginPath(); ctx.arc(centerX, manY - 20, 10, 0, Math.PI * 2); ctx.stroke();
+            ctx.moveTo(centerX, manY - 10); ctx.lineTo(centerX, manY + 20); ctx.stroke();
+            ctx.moveTo(centerX - 15, manY); ctx.lineTo(centerX + 15, manY + (manState === 'jump' ? -20 : 0)); ctx.stroke();
+            ctx.moveTo(centerX, manY + 20); ctx.lineTo(centerX - 10, manY + 40); 
+            ctx.moveTo(centerX, manY + 20); ctx.lineTo(centerX + 10, manY + 40); ctx.stroke();
+        }
+        requestAnimationFrame(draw);
+    }
+
+    function animate(type) {
+        manState = type;
+        let frame = 0;
+        const interval = setInterval(() => {
+            if (type === 'jump') manY = 120 - Math.abs(Math.sin(frame * 0.2) * 50);
+            frame++;
+            if (frame > 40) { 
+                clearInterval(interval); manState = 'idle'; manY = 120; 
+                if (type === 'jump') generateProblem();
+            }
+        }, 25);
+    }
+
+    function checkAnswer() {
+        const userAns = parseInt(answerInput.value);
+        if (userAns === currentAnswer) {
+            score++;
+            scoreEl.innerText = score;
+            quoteEl.classList.remove('level-up');
+            
+            speakTada(); // Voice Ta-da!
+
+            if (score % 10 === 0) {
+                level++;
+                levelEl.innerText = level;
+                createFirework();
+                quoteEl.innerText = `LEVEL ${level} reached!! Well done! Dad is proud!`;
+                quoteEl.classList.add('level-up');
+            } else {
+                quoteEl.innerText = quotes[Math.floor(Math.random() * quotes.length)] + "\nProud of you buddy!";
+                quoteEl.style.color = "#2e7d32";
+            }
+            animate('jump');
+        } else {
+            quoteEl.innerText = "Oops! Try again, you can do it!";
+            quoteEl.style.color = "#c62828";
+            animate('fall');
+        }
+    }
+
+    canvas.width = 300; canvas.height = 180;
+    generateProblem();
+    draw();
+</script>
+
+</body>
+</html>
